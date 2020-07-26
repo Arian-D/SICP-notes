@@ -1,0 +1,229 @@
+#+TITLE: Chapter 1
+#+AUTHOR: Arian Dehghani
+#+OPTIONS: num:nil
+#+STARTUP: latexpreview
+* 1.1
+Value returned by the interpreter
+#+begin_src scheme
+10
+#+end_src
+10
+
+#+begin_src scheme
+(+ 5 3 4)
+#+end_src
+12
+
+#+begin_src scheme
+(- 9 1)
+#+end_src
+8
+
+#+begin_src scheme
+(/ 6 2)
+#+end_src
+3
+
+#+begin_src scheme
+(+ (* 2 4) (- 4 6))
+#+end_src
+6
+
+#+begin_src scheme
+(define a 3)
+(define b (+ a 1))
+#+end_src
+
+#+begin_src scheme
+(+ a b (* a b))
+#+end_src
+19
+#+begin_src scheme
+(= a b)
+#+end_src
+~#f~
+#+begin_src scheme
+(if (and (> b a) (< b (* a b)))
+    b
+    a)
+#+end_src
+4
+#+begin_src scheme
+(cond ((= a 4) 6)
+      ((= b 4) (+ 6 7 a))
+      (else 25))
+#+end_src
+16
+#+begin_src scheme
+(+ 2 (if (> b a) b a)
+#+end_src
+6
+#+begin_src scheme
+(* (cond ((> a b) a)
+	 ((< a b) b)
+	 (else -1))
+   (+ a 1))
+#+end_src
+16
+* 1.2
+#+begin_src scheme
+(/ (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5))))) (* 3 (- 6 2) (- 7 2)))
+#+end_src
+* 1.3
+There are $6!$ ways to rearrange "abc." So we can check for each case
+#+begin_src scheme
+(define (largest-sum a b c)
+  (cond ((and (> a b) (> b c)) (+ (square a) (square b)))
+	((and (> a c) (> c b)) (+ (square a) (square c)))
+	((and (> b a) (> a c)) (+ (square b) (square a)))
+	((and (> b c) (> c a)) (+ (square b) (square c)))
+	((and (> c a) (> a b)) (+ (square c) (square a)))
+	((and (> c b) (> b a)) (+ (square c) (square b)))))
+#+end_src
+* 1.4
+#+begin_src scheme
+(define (a-plus-abs-b a b)
+  ((if (> b 0) + -) a b))
+#+end_src
+Here, ~if~ is choosing the operator based on the value of ~b~. So first,
+the ~if~ evaluates to one of the two primitive functions, and then it is
+applied to a and b.
+
+Actually, since both ~-~ and ~+~ can take only one argument, you can
+define ~abs~ using this method:
+#+begin_src scheme
+(define (abs x) ((if (>= x 0) + -) x))
+#+end_src
+* 1.5
+#+begin_src scheme
+(define (p) (p))
+(define (test x y) (if (= x 0) 0 y))
+#+end_src
+Let's try to evaluate ~(test 0 (p))~ using normal order.
+#+begin_src scheme
+(test 0 (p))
+(if (= 0 0) 0 (p))
+(if #t 0 (p))
+0
+#+end_src
+But with applicative, you get
+#+begin_src scheme
+(test 0 (p))
+(if (= 0 0) 0 (p))
+(if #t 0 (p))
+(if #t 0 (p))
+...
+#+end_src
+So, if your interpreter hangs (in my case it did in racket and guile)
+that means it uses applicative-order.
+* 1.6
+Alyssa P. Hacker back at it again! She thinks that ~if~ is just a
+special form of ~cond~. Her friend Eva Lu Ator (Ha!) defines a new ~if~
+#+begin_src scheme
+(define (new-if predicate then-clause else-clause)
+  (cond (predicate then-clause)
+	(else else-clause)))
+#+end_src
+so she uses it in
+#+begin_src scheme
+(define (sqrt-iter guess x)
+  (new-if (good-enough? guess x)
+	  guess
+	  (sqrt-iter (improve guess x) x)))
+#+end_src
+What's the problem?
+
+Let's try to evaluate it ourself with a number, using
+applicative-order:
+#+begin_src scheme
+(sqrt-iter 1.0 2)
+
+(new-if (good-enough? 1.0 2)
+	1.0
+	(sqrt-iter (improve 1.0 2) 2))
+
+(cond ((good-enough? 1.0 2) 1.0)
+      (else (sqrt-iter (improve 1.0 2) 2))))
+#+end_src
+This, then, tries to evaluate the recursive ~sqrt-iter~ and
+~good-enough?~ and keeps expanding that. ~if~, on the other hand,
+short-circuits it. 
+* 1.7
+The ~good-enough?~ is not very efficient. An example is the following
+#+begin_src scheme
+(sqrt 10000000000000000000000000000000000000000000000)
+#+end_src
+This works well with the builtin ~sqrt~ function, but freezes on our
+implementation. As for small numbers it goes, it's very inaccurate:
+#+begin_src scheme
+(sqrt 0.00000000000000000000000000000000000000000000001)
+#+end_src
+This returns 3.1622776601683795e-24 with the default guile ~sqrt~, but
+returns 0.03125 with ours. Now, why is this happening? It's because of
+that not-so-good-enough function that calculates the square of x
+*every iteration*. This is not very good, because for very large
+numbers, it would have to do ~*~ quite a bit, and for small numbers, ~*~
+might not be so accurate.
+
+Solution? Do the thing the book recommends:
+write a new ~good-enough?~ that checks for changes in guesses rather
+than the difference of the square and guess.
+#+begin_src scheme
+(define (sqrt-iter old-guess guess x)
+  (if (< (abs (- guess old-guess)) 0.001)
+      guess
+      (sqrt-iter guess (improve guess x) x)))
+#+end_src
+This was very simple, and the results, though not as good as
+guile, were much better. It also did not freeze on the large
+numbers. One simple tweak to make it easier to read is to add a
+~good-enough?~ just to make it a little bit more readable and similar to
+the book.
+#+begin_src scheme
+(define (sqrt-iter old-guess guess x)
+  (if (good-enough? old-guess guess)
+      guess
+      (sqrt-iter guess (improve guess x) x)))
+
+(define (good-enough? old-guess guess)
+  (< (abs (- old-guess guess)) 0.001))
+#+end_src
+* 1.8
+This sort of cheating, considering the book straight up gives us the
+formula, and we've seen how it's done with square root.
+
+#+begin_src scheme
+(define (cube-root-iter guess x)
+  (if (good-enough? guess x)
+      guess
+      (cube-root-iter (improve guess x) x)))
+#+end_src
+
+This is pretty much the same as square root, except the procedures
+used are somewhat different. The first one is just like square root.
+#+begin_src scheme
+(define (good-enough? guess x)
+  (< (abs (- (cube guess) x)) 0.001))
+#+end_src
+
+The only difference is the ~cube~, which can easily be defined with
+#+begin_src scheme
+(define (cube x)
+  (* x x x))
+#+end_src
+Obviously, because $x^2 \cdot x = x \cdot x^2 = x^3$, you can also do
+#+begin_src scheme
+(define (cube x)
+  (* (square x) x)) ; or (* x (square x))
+#+end_src
+
+Coming back to ~cube-root-iter~, we don't have an ~improve~. This is where
+the main difference comes into play. According to the book, if $y$ is
+an approximation (~guess~), \[\dfrac{x/y^2 + 2y}{3}\] gives you a better
+approximation. So now all you do is translate inline math to scheme:
+#+begin_src scheme
+(define (improve guess x)
+  (/ (+ (/ x (square guess))
+	  (* 2 guess))
+     3))
+#+end_src

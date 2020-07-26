@@ -1,0 +1,375 @@
+#+TITLE: Chapter 1
+#+AUTHOR: Arian Dehghani
+#+OPTIONS: num:nil
+Programmers writing programs are like wizards conjuring
+spells. Learning programming is not dangerous, but real-world
+programming can be bad, because just like novice wizards, programmers
+can make things go boom.
+
+Lisp is one of the oldest languages that has survived (the other being
+Fortran). Computational processes and data are both lists, so the
+distinction that occurs in other languages is kind of blurry
+here. This allows you to manipulate the data and procedures as a
+similar thing. 
+
+Scheme is the dialect that this book uses. It's nice. Guy Steele and
+Gerald Sussman are the masterminds behind it. The first IEEE standard
+appeared in 1990. Common lisp also added some of its features later
+on.
+* 1.1 Elements of programming
+The three big elements of programming are
+1) Primitive units: They're like atoms; they can't be further broken
+   down.
+2) Combination: You should be able to combine things to build larger
+   things. (things = elements)
+3) Abstraction: You should be able to play around with large
+   (compound) elements as units.
+Data and procedures are not very different (in lisp lol). For now,
+this book deals with simple data (like numbers).
+** 1.1.1 Expressions
+The first element, the primitive unit, is easy to use at the repl
+(read-evaluate-print-loop). You just do
+#+begin_src scheme :exports both
+420
+#+end_src
+
+#+RESULTS:
+: 420
+It gives the number back. You just wrote an /expression/ and the repl
+/evaluated/ it. 
+
+For application of procedures, you write the second element:
+combination. For that, you need the /operator/ (function, method,
+procedure, etc) and /operands/ (argument, parameter, etc). For example
+you can do multiplication with
+#+begin_src scheme :exports both
+(* 420 69)
+#+end_src
+
+#+RESULTS:
+: 28980
+
+There are advantages to this /prefix/ notation:
+1) You can have an arbitrary number of operands
+2) There is no ambiguity
+3) Easily nested structures
+
+We can write something like
+#+begin_src scheme :exports both
+(+ 1 2 (* 3 (/ 4 (- 5 4)) 3) 2 1 69)
+#+end_src
+
+#+RESULTS:
+: 111
+
+There is no ambiguity for the computer, but the humans need to
+understand it better. Thanks to our dear friend emacs, we can write
+the same thing as
+#+begin_src scheme :exports both
+(+ 1 2
+   (* 3
+      (/ 4
+	 (- 5 4))
+      3)
+   2 1 69)
+#+end_src
+
+#+RESULTS:
+: 111
+
+which is much clearer.
+
+Last thing to mention is that the repl doesn't require you to tell it
+to print out the value; it does it for you. That's the beauty of repl.
+** 1.1.2 Naming and Environment
+Now we get to the third and last element, which is abstraction. The
+simplest form of abstraction is naming values. For example you can set
+the value of a number and see the result in a repl with
+#+begin_src scheme :exports both
+(define n 42)
+n
+#+end_src
+
+#+RESULTS:
+: 42
+
+you can also use this to define variables from variables, or other
+forms of expressions. One fairly important thing the book mentions is
+that these variables are stored in memory, and they're specifically in
+the /global environment/. We'll learn abour more in chapter 3.
+
+Here are some math refreshers from high school.
+- Area and perimeter of a square
+#+begin_src scheme
+(define side 10)
+(define area (* side side))
+(define perimeter (* 4 side))
+#+end_src
+- Area of a triangle
+#+begin_src scheme :exports both
+(define base 20)
+(define height (/ 10))
+(define area (/ (* base height) 2))
+area
+#+end_src
+
+#+RESULTS:
+: 1
+
+- Pythagorean theroem
+
+#+begin_src scheme :exports both
+(define a 3)
+(define b 4)
+(define c (sqrt (+ (* a a) (* b b))))
+c
+#+end_src
+
+#+RESULTS:
+: 5
+** 1.1.3 Evaluating Combinations
+To evaluate an expression, you first evaluate the subexpression. Then,
+you apply leftmost expression to those of the righthand
+subexpressions. You can draw a tree (too lazy to use graphviz. I'll
+just do bullets). An expression like
+#+begin_src scheme
+(* 1 23 (/ 45 6))
+#+end_src
+can be thought of a tree like
+- ~115~
+  - ~*~
+  - ~1~
+  - ~23~
+  - ~5~
+    - ~/~
+    - ~45~
+    - ~6~
+It's also important to know that there could be symbols like ~x~ in
+there, or even ~*~ and ~/~ are also ~define~ d. This means that without
+context, these expressions are meaningless, which again relates to the
+global environment. 
+** 1.1.4 Compound procedures
+In scheme, they call functions procedures. They have an easy syntax:
+#+begin_src
+(define (<name> <bunch of params>) (<body>))
+#+end_src
+Name is the name of the function. Notice that the definition looks
+just as if you called the function (not the case in common lisp). Then
+you have the parameters (called formal parameters in the book), and
+finally, the body. The body is either an expression, or a series of
+expressions, in which case the last expression is returned.
+The book uses square and sum of squares as example
+#+begin_src scheme :exports both
+  (define (square x) (* x x))
+  (define (sum-of-squares x y) (+ (square x) (square y)))
+  (sum-of-squares 3 4)
+#+end_src
+
+#+RESULTS:
+: 25
+
+This makes it easy to define and call compound procedures. Let me do a
+simple example:
+
+#+begin_src scheme :exports both
+(define (area-of-triangle base height) (* 1/2 base height))
+(area-of-triangle 2 10)
+#+end_src
+
+#+RESULTS:
+: 10
+
+Note: The ~1/2~ is a unit, not a division. You can also one of the
+following:
+
+#+begin_src scheme
+(define (area-of-triangle base height) (* (/ 1 2) base height))
+(define (area-of-triangle base height) (* (/ base 2) height))
+(define (area-of-triangle base height) (/ (* base height) 2))
+#+end_src
+** 1.1.5 The Substitution Model for Procedure Application
+The substitution model is just how the interpreter interprets the
+given expression. They used an example in the previous chapter in the
+book called ~f~
+#+begin_src scheme
+(define (f x y) (sum-of-squares (+ 1 x) (* 2 y)))
+#+end_src
+
+If we want to evaluate the following
+#+begin_src scheme
+(f 10 20)
+#+end_src
+
+we have two choices
+1) Normal order substitution
+2) Applicative order substitution
+
+With applicative substitution you "evaluate and apply."
+So ~(f 10 20)~ is evaluated like this:
+#+begin_src scheme
+(f 10 20)
+(sum-of-squares (+ 1 10) (* 2 20))
+(sum-of-squares 11 40)
+(+ (square 11) (square 40))
+(+ (* 11 11) (* 40 40))
+(+ 121 1600)
+1721
+#+end_src
+Again, this is the applicative, and the first example they use in the
+book. The second, my personal favorite, is normal-order:
+#+begin_src scheme
+(f 10 20)
+(sum-of-squares (+ 1 10) (* 2 20))
+(+ (square (+ 1 10)) (square (* 2 20)))
+(+ (* (+ 1 10) (+ 1 10)) (* (* 2 20) (* 2 20)))
+(+ (* 11 11) (* 40 40))
+(
+#+begin_src scheme
+#+end_src+ 121 1600)
+1721
+#+end_src
+Here they produce the same result, but according to the book, there
+are cases where they don't. The first one, applicative, is the one
+that does evaluating and applying. The second one, normal, is the one
+that fully expands the expression until there are only primitive
+procedures and atoms (numbers) and then it starts applying the
+arguments to procedures.
+** 1.1.6 Conditional Expressions and Predicates
+So the major operator is ~cond~. You give it a bunch of ~(p e)~ and it
+tries all of them until one of the predicates is true. For instance,
+you can write the absolute value function like this:
+#+begin_src scheme
+(define (abs x)
+  (cond ((> x 0) x)
+	((< x 0) (- x))
+	((= x 0) 0)))
+#+end_src
+You can also put ~else~ for the last predicate, which is for the case
+when none of the other predicates are true.Then, you have the if
+statements which have the form.
+#+begin_src
+(if <predicate> <it's true> <otherwise>)
+#+end_src
+The big difference between the two is that cond expressions can be
+more than one, while if only accepts one expression.
+
+There are also boolean operations: ~and~, ~or~, and ~not~. ~and~ checks
+everything and returns false if any of the parameters are false. It
+also returns the last parameter if they are all true. One thing to
+note is that, although the ~#t~ truth value exists, anything that is not
+~#f~ evaluates to true. ~or~ returns true if any of the expressions are
+true, and returns false otherwise. ~not~ is a unary operator which
+returns true for false and false for true.
+** 1.1.7 Square Roots by Newton's method
+Mathematical functions and computer procedures are /similar/, but they
+are _not_ the same. In mathematical functions you are told "what
+something is" as opposed to computers where you say "How something is
+done." This distinction means that we can't just use the definition of
+square root $\sqrt{x} = y,\quad y^2=x$. Here, in scheme, we gotta tell
+the computer *how* to find the square root. The book hints at languages
+that can infer definitions declaratively, which I'm guessing is a
+reference to Prolog, Haskell, or Coq.
+
+The Newton's method can be written like the following:
+#+begin_src scheme
+(define (sqrt-iter guess x)
+  (if (good-enough? guess x)
+      guess
+      (sqrt-iter (improve guess x) x)))
+#+end_src
+Here, we start with a guess and continue to improve and average the
+result until the guess is good enough. ~improve~ is supposed to
+"improve" the guess, as in make it more accurate.
+#+begin_src scheme
+(define (improve guess x)
+  (average guess (/ x guess)))
+#+end_src
+and average is pretty much self-explanetory:
+#+begin_src scheme
+(define (average x y)
+  (/ (+ x y) 2))
+#+end_src
+The only remaining piece of the puzzle is ~good-enough?~. Names ending
+in a ~?~ denote a predicate. In this case, ~good-enough?~ has to indicate
+whether the guess is good enough for the given x.
+#+begin_src scheme
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+#+end_src
+Finally, we put it all together in a function where the user doesn't
+bother with inputting the guess.
+#+begin_src scheme
+(define (sqrt x)
+  (sqrt-iter 1.0 x))
+#+end_src
+Voila! We're done with the square root function. A couple of things to
+note is that
+1) We didn't go from building the blocks up to the function that we
+   wanted; we wrote the function, and then filled in the gaps.
+2) Another thing is that ~1.0~ is a decimal number, while ~1~ is an
+   integer.
+3) No loops. As the name suggests, ~sqrt-iter~ iteratively finds the
+   solution, but without mutation.
+The book also mentions that if you're a bearded unix oldie who thinks
+this is too inefficient, we'll learn TOC soon.
+
+$\sin{x} = x$
+** 1.1.8 Procedures as Black Box Abstractions
+The procedure that we defined earlier was recursive (duh). The book
+goes into more detail in chapter 1.2. The more interesting thing about
+it, however, was the process of defining it.
+
+First, we wrote the definition of the procedure. It used many other
+procedures (like ~good-enough?~, ~improve~, etc), but we hadn't defined
+them at that point; we looked at them as a black box. We didn't know
+what was going on inside of them, but we did know what they
+accomplished, so we used them. This, in my opinion, gives more freedom
+of how you can implement the ideas in your head, as opposed to getting
+into the nitty gritty, and working your way up. This method, according
+to the book, is called _procedural abstraction_.
+
+Another thing about this "black box" is the name of the internal
+parameters. For example, the square definition of the book was
+#+begin_src scheme
+(define (square x) (* x x))
+#+end_src
+Had it been
+#+begin_src scheme
+(define (square y) (* y y))
+#+end_src
+It should not have made any difference to the person using it. This is
+good, because if internal parameters were context-aware, they could be
+consfused with other variables of the same name.
+
+The way these variables are local to the procedure is called being
+_bound_. Other stuff, which are not just for the inside of the
+procedure, are called _free_. In other words, the procedure binds its
+parameters to its own definition. The location for which a bound
+variable has a meaning is its scope. For instance, in a procedure's
+definition, the scope of the parameter is the procedure's definition. 
+
+This isolation allows us to solve another problem. We had a procedure,
+and it depended on many helpers. Note that the user of the procedure
+did not need those helper procedures, but only the main one. Scheme is
+able to define procedures within other procedures; this means we can
+put those within each other, so that only ~sqrt~ is exposed to the
+user. As an example (smaller than the book), we had these two procedures:
+#+begin_src scheme
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+(define (square x) (* x x))
+#+end_src
+
+Instead of exposing square to the outside, we can embed it within
+~good-enough?~:
+#+begin_src scheme
+(define (good-enough? guess x)
+  (define (square x) (* x x))
+  (< (abs (- (square guess) x)) 0.001))
+#+end_src
+This whole structuring idea is called _block structures_ which
+apparently originates from Algol 60. Another thing that the book
+mentions is that since x is passed around different procedures within
+the main one, we can omit it in the internal definitions and rely on
+_lexical scoping_, which is how local variables reside in an
+environment.

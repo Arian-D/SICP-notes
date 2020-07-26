@@ -1,0 +1,10 @@
+#+TITLE: SICP notes
+These are my personal notes for [[https://mitpress.mit.edu/sites/default/files/sicp/index.html][SICP]].
+
+I used [[https://www.gnu.org/software/guile/][Guile]] as my scheme implementation, and [[https://www.gnu.org/software/emacs/][Emacs]] as my editor with
+[[https://orgmode.org/][Org mode]] for taking notes. Feel free to read, copy, and use my messy
+notes and solutions; there is no guarantee any are correct.
+
+
+
+
